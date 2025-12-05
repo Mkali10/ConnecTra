@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ConnecTra Admin Dashboard</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .connec-tra-admin { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); }
+    .stats-card { transition: all 0.3s ease; }
+    .stats-card:hover { transform: translateY(-5px); box-shadow: 0 25px 50px -12px rgba(0, 0, 255, 0.25); }
+  </style>
+</head>
+<body class="connec-tra-admin text-white min-h-screen">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    function ConnecTraAdminDashboard() {
+      const [users, setUsers] = useState([]);
+      const [stats, setStats] = useState({ sessions: 0, activeUsers: 0, revenue: 0 });
+      const [loading, setLoading] = useState(true);
+      const [selectedUser, setSelectedUser] = useState(null);
+
+      // Fetch data
+      useEffect(() => {
+        fetchAdminData();
+        const interval = setInterval(fetchAdminData, 30000); // Refresh every 30s
+        return () => clearInterval(interval);
+      }, []);
+
+      const fetchAdminData = async () => {
+        const token = localStorage.getItem('connecTraAdminToken');
+        try {
+          const [usersRes, statsRes] = await Promise.all([
+            fetch('/api/admin/users', { headers: { 'Authorization': `Bearer ${token}` } }),
+            fetch('/api/admin/analytics', { headers: { 'Authorization': `Bearer ${token}` } })
+          ]);
+          
+          if (usersRes.ok) setUsers(await usersRes.json());
+          if (statsRes.ok) setStats(await statsRes.json());
+          setLoading(false);
+        } catch (err) {
+          console.error('Admin data fetch failed:', err);
+        }
+      };
+
+      const extendSubscription = async (userId) => {
+        const token = localStorage.getItem('connecTraAdminToken');
+        await fetch(`/api/admin/users/${userId}/extend`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        fetchAdminData(); // Refresh
+      };
+
+      const banUser = async (userId) => {
+        if (!confirm('Ban this user?')) return;
+        // Add ban API call here
+        fetchAdminData();
+      };
+
+      if (loading) {
+        return (
+          <div class="flex items-center justify-center min-h-screen">
+            <div class="animate-spin rounded-full h-32 w-32 border-b-2 border-white"></div>
+          </div>
+        );
+      }
+
+      return (
+        <div class="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 p-8">
+          {/* Header */}
+          <div class="flex justify-between items-center mb-12">
+            <div>
+              <h1 class="text-5xl font-black bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent mb-2">
+                ConnecTra Admin
+              </h1>
+              <p class="text-blue-200">Real-time Remote Access Control Panel</p>
+            </div>
+            <button 
+              class="px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl font-semibold hover:scale-105 transition-all shadow-2xl"
+              onClick={fetchAdminData}
+            >
+              🔄 Refresh
+            </button>
+          </div>
+
+          {/* Stats Cards */}
+          <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-12">
+            <div class="stats-card bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/20">
+              <div class="text-4xl mb-4">👥</div>
+              <h3 class="text-3xl font-bold text-white mb-2">{users.length}</h3>
+              <p class="text-blue-200">Total Users</p>
+            </div>
+            <div class="stats-card bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/20">
+              <div class="text-4xl mb-4">📊</div>
+              <h3 class="text-3xl font-bold text-white mb-2">{stats.sessions?.total_sessions || 0}</h3>
+              <p class="text-blue-200">Sessions Today</p>
+            </div>
+            <div class="stats-card bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/20">
+              <div class="text-4xl mb-4">💰</div>
+              <h3 class="text-3xl font-bold text-emerald-400 mb-2">${stats.revenue || 0}</h3>
+              <p class="text-blue-200">Monthly Revenue</p>
+            </div>
+            <div class="stats-card bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/20">
+              <div class="text-4xl mb-4">⚡</div>
+              <h3 class="text-3xl font-bold text-purple-400 mb-2">{stats.activeUsers || 0}</h3>
+              <p class="text-blue-200">Active Now</p>
+            </div>
+          </div>
+
+          {/* Users Table */}
+          <div class="bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10">
+            <div class="flex justify-between items-center mb-8">
+              <h2 class="text-3xl font-bold text-white">👨‍💼 User Management</h2>
+              <div class="flex gap-3">
+                <input 
+                  class="px-6 py-3 bg-white/10 rounded-xl border border-white/20 text-white placeholder-blue-300 focus:outline-none focus:ring-4 focus:ring-blue-500/30"
+                  placeholder="Search users..."
+                />
+                <button class="px-8 py-3 bg-gradient-to-r from-orange-500 to-red-600 rounded-xl font-semibold hover:scale-105">
+                  Export CSV
+                </button>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left">
+                <thead>
+                  <tr class="border-b border-white/20">
+                    <th class="py-4 px-6 font-semibold text-white text-lg">Email</th>
+                    <th class="py-4 px-6 font-semibold text-white text-lg">Subscription</th>
+                    <th class="py-4 px-6 font-semibold text-white text-lg">Role</th>
+                    <th class="py-4 px-6 font-semibold text-white text-lg">Created</th>
+                    <th class="py-4 px-6 font-semibold text-white text-lg">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map(user => (
+                    <tr key={user.id} class="border-b border-white/10 hover:bg-white/5 transition-colors">
+                      <td class="py-6 px-6 font-medium text-white">{user.email}</td>
+                      <td class="py-6 px-6">
+                        <span class={`px-4 py-2 rounded-full text-sm font-semibold ${
+                          new Date(user.subscription_end) > new Date() 
+                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' 
+                            : 'bg-red-500/20 text-red-300 border border-red-500/30'
+                        }`}>
+                          {new Date(user.subscription_end) > new Date() ? 'Active' : 'Expired'}
+                        </span>
+                      </td>
+                      <td class="py-6 px-6">
+                        <span class={`px-3 py-1 rounded-full text-sm font-bold ${
+                          user.role === 'admin' 
+                            ? 'bg-purple-500 text-white' 
+                            : 'bg-blue-500/20 text-blue-300'
+                        }`}>
+                          {user.role}
+                        </span>
+                      </td>
+                      <td class="py-6 px-6 text-blue-300">{new Date(user.created_at).toLocaleDateString()}</td>
+                      <td class="py-6 px-6">
+                        <div class="flex gap-2">
+                          <button 
+                            class="px-4 py-2 bg-emerald-500/80 hover:bg-emerald-500 text-white rounded-lg font-medium transition-all"
+                            onClick={() => extendSubscription(user.id)}
+                          >
+                            ➕ 30 Days
+                          </button>
+                          <button 
+                            class="px-4 py-2 bg-orange-500/80 hover:bg-orange-500 text-white rounded-lg font-medium transition-all"
+                            onClick={() => {/* Edit modal */}}
+                          >
+                            ✏️ Edit
+                          </button>
+                          <button 
+                            class="px-4 py-2 bg-red-500/80 hover:bg-red-500 text-white rounded-lg font-medium transition-all"
+                            onClick={() => banUser(user.id)}
+                          >
+                            🚫 Ban
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Charts Section */}
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-12">
+            <div class="bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10">
+              <h3 class="text-2xl font-bold mb-6">📈 Sessions Trend</h3>
+              <canvas id="sessionsChart" width="400" height="200"></canvas>
+            </div>
+            <div class="bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10">
+              <h3 class="text-2xl font-bold mb-6">💳 Revenue</h3>
+              <canvas id="revenueChart" width="400" height="200"></canvas>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Admin Login Check
+    if (!localStorage.getItem('connecTraAdminToken')) {
+      window.location.href = '/';
+    }
+
+    ReactDOM.render(<ConnecTraAdminDashboard />, document.getElementById('root'));
+  </script>
+</body>
+</html>
