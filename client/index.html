@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ConnecTra - Remote Access</title>
+  <script src="https://cdn.socket.net/4.7.5/socket.io.min.js"></script>
+  <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.js"></script>
+  <style>
+    :root {
+      --primary: #00aaff;
+      --primary-dark: #0088cc;
+      --bg-dark: #1a1a2e;
+      --bg-card: #16213e;
+      --text-light: #e0e6ed;
+      --accent: #00d4aa;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: 'Segoe UI', -apple-system, sans-serif; 
+      background: linear-gradient(135deg, var(--bg-dark), #0f3460);
+      color: var(--text-light);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .connec-tra-header {
+      background: rgba(0, 170, 255, 0.95);
+      padding: 1rem 2rem;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(0, 170, 255, 0.3);
+      backdrop-filter: blur(10px);
+    }
+
+    .connec-tra-logo {
+      font-size: 2.5rem;
+      font-weight: 800;
+      background: linear-gradient(45deg, #fff, #00d4aa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+    }
+
+    .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+
+    .login-form, .session-panel { 
+      background: rgba(22, 33, 62, 0.9);
+      border-radius: 20px;
+      padding: 2.5rem;
+      backdrop-filter: blur(15px);
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+      max-width: 500px;
+      margin: 2rem auto;
+    }
+
+    .input-group {
+      margin-bottom: 1.5rem;
+      position: relative;
+    }
+
+    input[type="email"], input[type="password"], input[type="text"] {
+      width: 100%;
+      padding: 1rem 1.2rem;
+      border: 2px solid rgba(0,170,255,0.3);
+      border-radius: 12px;
+      background: rgba(255,255,255,0.1);
+      color: var(--text-light);
+      font-size: 1rem;
+      transition: all 0.3s ease;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(0,170,255,0.2);
+      background: rgba(255,255,255,0.15);
+    }
+
+    .btn-connec-tra {
+      width: 100%;
+      padding: 1.2rem;
+      border: none;
+      border-radius: 12px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin: 0.5rem 0;
+    }
+
+    .btn-primary { background: linear-gradient(45deg, var(--primary), var(--accent)); color: white; }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0,170,255,0.4); }
+    .btn-secondary { background: rgba(255,255,255,0.15); color: var(--text-light); border: 2px solid rgba(255,255,255,0.2); }
+
+    .videos-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      margin: 2rem 0;
+    }
+
+    video {
+      width: 100%;
+      height: 400px;
+      border-radius: 16px;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+      background: var(--bg-card);
+    }
+
+    .controls-panel {
+      background: rgba(22, 33, 62, 0.9);
+      border-radius: 16px;
+      padding: 2rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin: 2rem 0;
+    }
+
+    .chat-panel {
+      background: rgba(22, 33, 62, 0.9);
+      border-radius: 16px;
+      padding: 1.5rem;
+      height: 400px;
+      overflow-y: auto;
+    }
+
+    .chat-message {
+      padding: 1rem;
+      margin: 0.5rem 0;
+      border-radius: 12px;
+      background: rgba(0, 170, 255, 0.2);
+    }
+
+    .branding-overlay {
+      position: fixed;
+      top: 100px;
+      right: 30px;
+      background: rgba(0,0,0,0.85);
+      padding: 1.5rem;
+      border-radius: 16px;
+      border: 2px solid var(--primary);
+      backdrop-filter: blur(20px);
+      z-index: 1000;
+      max-width: 250px;
+    }
+
+    .ai-indicator {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background: linear-gradient(45deg, #ff6b6b, #ffd93d);
+      color: white;
+      padding: 1rem 1.5rem;
+      border-radius: 50px;
+      font-weight: bold;
+      animation: pulse 2s infinite;
+      z-index: 1001;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    @media (max-width: 768px) {
+      .videos-grid { grid-template-columns: 1fr; }
+      .controls-panel { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <!-- ConnecTra Header -->
+  <header class="connec-tra-header">
+    <div class="connec-tra-logo">ConnecTra</div>
+    <div>Professional Remote Access & AI Meetings</div>
+  </header>
+
+  <div class="container">
+    <!-- Login Panel -->
+    <div id="loginPanel" class="login-form">
+      <h2>🔐 Sign In to ConnecTra</h2>
+      <div class="input-group">
+        <input id="emailInput" type="email" placeholder="Email address" required>
+      </div>
+      <div class="input-group">
+        <input id="passwordInput" type="password" placeholder="Password" required>
+      </div>
+      <button class="btn-connec-tra btn-primary" onclick="connecTraLogin()">🚀 Connect</button>
+      <button class="btn-connec-tra btn-secondary" onclick="connecTraAdminLogin()">👨‍💼 Admin</button>
+      <div style="text-align: center; margin-top: 1rem; opacity: 0.7;">
+        Demo: admin@connec-tra.com / ConnecTra2025!
+      </div>
+    </div>
+
+    <!-- Main Session Panel -->
+    <div id="mainPanel" style="display: none;">
+      <div class="login-form">
+        <h2>🎯 ConnecTra Session</h2>
+        <div class="input-group">
+          <button class="btn-connec-tra btn-primary" onclick="createConnecTraSession()" style="width: auto; padding: 1rem 2rem;">
+            ➕ New Session
+          </button>
+          <input id="sessionIdInput" type="text" placeholder="Enter ConnecTra Session ID">
+          <button class="btn-connec-tra btn-primary" onclick="joinConnecTraSession()" style="width: auto; padding: 1rem 2rem;">
+            🚪 Join Session
+          </button>
+        </div>
+      </div>
+
+      <!-- Video Feeds -->
+      <div class="videos-grid">
+        <div>
+          <h3>📱 Your Screen</h3>
+          <video id="localVideo" autoplay muted playsinline></video>
+        </div>
+        <div>
+          <h3>🖥️ Remote Screen</h3>
+          <video id="remoteVideo" autoplay playsinline></video>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div class="controls-panel">
+        <button class="btn-connec-tra btn-primary" onclick="toggleConnecTraControl()">
+          🎮 <span id="controlStatus">Enable Control</span>
+        </button>
+        <button class="btn-connec-tra btn-primary" onclick="startConnecTraRecording()">
+          📹 Start Recording
+        </button>
+        <button class="btn-connec-tra btn-primary" onclick="stopConnecTraRecording()">
+          ⏹️ Stop Recording
+        </button>
+        <label class="btn-connec-tra btn-secondary">
+          📎 Send File <input id="fileInput" type="file" style="display: none;" onchange="sendConnecTraFile(event)">
+        </label>
+        <button class="btn-connec-tra btn-primary" onclick="toggleConnecTraAI()">
+          🤖 AI Agent
+        </button>
+      </div>
+
+      <!-- Chat -->
+      <div style="display: grid; grid-template-columns: 3fr 1fr; gap: 2rem;">
+        <div class="chat-panel">
+          <h3>💬 ConnecTra Chat</h3>
+          <div id="chatMessages"></div>
+          <div style="margin-top: 1rem;">
+            <input id="chatInput" placeholder="Type message..." style="flex: 1;">
+            <button class="btn-connec-tra btn-primary" onclick="sendConnecTraChat()" style="width: auto; padding: 0.8rem 1.5rem;">
+              Send
+            </button>
+          </div>
+        </div>
+        
+        <!-- Branding Overlay -->
+        <div class="branding-overlay" id="brandingOverlay">
+          <div id="companyLogo"></div>
+          <div id="companyInfo"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Indicator -->
+  <div id="aiIndicator" class="ai-indicator" style="display: none;">
+    🤖 ConnecTra AI Active
+  </div>
+
+  <script src="connec-tra-webrtc.js"></script>
+  <script src="connec-tra-ui.js"></script>
+</body>
+</html>
