@@ -1,0 +1,17 @@
+{
+  "name": "ConnecTra",
+  "version": "1.0.0",
+  "scripts": {
+    "server": "cd server && node index.js",
+    "client": "cd client && live-server .",
+    "admin": "cd admin && live-server .",
+    "db:migrate": "node server/db.js",
+    "electron": "electron client",
+    "build": "npm run electron:build",
+    "lan": "node client/lan.js"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "live-server": "^1.2.0"
+  }
+}
