@@ -1,17 +1,20 @@
 {
-  "name": "ConnecTra",
+  "name": "connec-tra",
   "version": "1.0.0",
+  "description": "ConnecTra - Complete Remote Access System",
   "scripts": {
+    "start": "npm run server",
     "server": "cd server && node index.js",
-    "client": "cd client && live-server .",
-    "admin": "cd admin && live-server .",
+    "client": "cd client && live-server . --port=3001",
+    "admin": "cd admin && live-server . --port=3002",
     "db:migrate": "node server/db.js",
-    "electron": "electron client",
-    "build": "npm run electron:build",
-    "lan": "node client/lan.js"
+    "lan": "node client/lan.js",
+    "build:electron": "electron-builder",
+    "build:installer": "npm run build:electron && electron-builder --publish=never"
   },
   "devDependencies": {
     "electron": "^28.0.0",
+    "electron-builder": "^24.0.0",
     "live-server": "^1.2.0"
   }
 }
