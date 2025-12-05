@@ -1,0 +1,71 @@
+appId: com.connec-tra.desktop
+productName: ConnecTra
+directories:
+  output: dist
+  buildResources: assets
+
+files:
+  - "**/*"
+  - "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}"
+  - "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}"
+  - "!**/node_modules/*.d.ts"
+  - "!**/node_modules/.bin"
+  - "!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,csproj,sln,xproj}"
+  - "!**/{.editorconfig,.jshintrc,.eslintrc,.eslintrc.js,.eslintrc.json,.prettierrc,.prettierrc.js,.prettierrc.json,.flowconfig,.flowconfig.js,.idea,*.iml,vscode}"
+  - "!**/{example,examples}/**/*"
+  - "!**/{src,lib}/**/*.test.js"
+  - "!**/client/lan.js"
+
+electronLanguages: 
+  - "en-US"
+  - "es"
+  - "fr"
+  - "de"
+  - "zh-CN"
+
+mac:
+  category: public.app-category.productivity
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: entitlements.mac.plist
+  entitlementsInherit: entitlements.mac.plist
+  notarize:
+    teamId: "YOUR_TEAM_ID"
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: portable
+      arch:
+        - x64
+  icon: assets/connec-tra-logo.png
+
+linux:
+  target:
+    - target: AppImage
+      arch:
+        - x64
+    - target: snap
+      arch:
+        - x64
+  category: Network
+  icon: assets/connec-tra-logo.png
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: ConnecTra
+  include: installer.nsh
+
+publish:
+  provider: generic
+  url: https://your-server.com/updates/
